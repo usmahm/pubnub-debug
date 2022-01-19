@@ -1,0 +1,49 @@
+
+.container {
+  display: grid;
+  grid-template-columns: 20rem 1fr;
+  grid-column-gap: 20px;
+  padding: 20px;
+  height: 100vh;
+}
+
+
+
+.channels {
+  text-align: left;
+}
+
+.channel {
+  background-color: skyblue;
+  padding: 5px 10px;
+  margin-bottom: 10px;
+  outline: none;
+  border: 2px solid blue;
+  border-radius: 10px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.msgs {
+  text-align: left;
+}
+
+.message {
+  border: 2px solid blue;
+  border-radius: 10px;
+  /* width: 100%; */
+  text-align: left;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.message p {
+  margin: 0;
+}
+
+textarea {
+  width: 20rem;
+  height: auto;
+  /* height: 10rem; */
+}
