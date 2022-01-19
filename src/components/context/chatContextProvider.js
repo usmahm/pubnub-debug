@@ -22,6 +22,7 @@ export const ContextProvider = ({ children }) => {
     publishKey: PUBNUB_PUBLISH_KEY_COMMUNITY,
     subscribeKey: PUBNUB_SUBSCRIBE_KEY_COMMUNITY,
     uuid: userid,
+    logVerbosity: true,
   };
 
   const pubnub = new Pubnub(pubnubConfig);
@@ -62,13 +63,12 @@ export const ContextProvider = ({ children }) => {
     const result = await pubnub.channelGroups.listChannels({
       channelGroup: userid,
     });
-    console.log(result);
+    // console.log(result);
     setChannels(result.channels);
 
-    return pubnub.unsubscribeAll();
   }, []);
 
-  useEffect(async () => {
+  useEffect(() => {
     if (!currentChannel) return;
 
     setMessages([])
@@ -78,23 +78,29 @@ export const ContextProvider = ({ children }) => {
       channels: [currentChannel],
     });
 
-    const messagesRes = await pubnub.fetchMessages({
-      channels: [currentChannel],
-    });
-
-    if (messagesRes.channels[currentChannel]) {
-      messagesRes.channels[currentChannel].forEach((msg) => {
-        const messageData = {
-          senderId: msg.uuid,
-          text: msg.message,
-          time: parseInt(msg.timetoken, 10) / 10000000,
-          id: msg.id,
-        };
-        setMessages((prevState) => [...prevState, messageData]);
+    const loadChannelDetails = async () => {
+      const messagesRes = await pubnub.fetchMessages({
+        channels: [currentChannel],
       });
+  
+      if (messagesRes.channels[currentChannel]) {
+        messagesRes.channels[currentChannel].forEach((msg) => {
+          const messageData = {
+            senderId: msg.uuid,
+            text: msg.message,
+            time: parseInt(msg.timetoken, 10) / 10000000,
+            id: msg.id,
+          };
+          setMessages((prevState) => [...prevState, messageData]);
+        });
+      }
+  
+      setLoadingChats(false);
     }
 
-    setLoadingChats(false);
+    loadChannelDetails();
+
+    return pubnub.unsubscribeAll();
   }, [currentChannel]);
 
   const createChannel = async (name) => {

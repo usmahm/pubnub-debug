@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useChatContext } from './context/chatContextProvider';
 import './ChatWindow.css';
-import { useEffect } from 'react/cjs/react.development';
+// import { useEffect } from 'react/cjs/react.development';
 
 const ChatWindow = () => {
   const [msgQuery, setMsgQuery] = useState('');
@@ -21,9 +21,9 @@ const ChatWindow = () => {
     setMsgQuery('');
   }
 
-  useEffect(() => {
-    console.log(messages)
-  }, [messages])
+  // useEffect(() => {
+  //   console.log(messages)
+  // }, [messages])
 
   return (
     <div className='container'>
