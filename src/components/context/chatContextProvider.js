@@ -15,16 +15,20 @@ export const ContextProvider = ({ children }) => {
   const [channels, setChannels] = useState([]);
   const [messages, setMessages] = useState([]);
   const [loadingChats, setLoadingChats] = useState(false);
+  const [hasMoreMsgs, setHasMoreMsgs] = useState(false);
+  const [startTimeToken, setStartTimeToken] = useState('')
 
   // console.log('changessss')
 
   const userid = "ahmadpubnubtest";
+  const messageCount = 10;
+  // const defaultTimeToken = '16455645907354341';
 
   const pubnubConfig = {
     publishKey: PUBNUB_PUBLISH_KEY_COMMUNITY,
     subscribeKey: PUBNUB_SUBSCRIBE_KEY_COMMUNITY,
     uuid: userid,
-    logVerbosity: true,
+    // logVerbosity: true,
   };
 
   const pubnub = new Pubnub(pubnubConfig);
@@ -36,11 +40,8 @@ export const ContextProvider = ({ children }) => {
       time: parseInt(msg.timetoken, 10) / 10000000,
       id: msg.id,
     };
-
-    if (messageData.senderId !== userid) {
-      // dispatch(changeAutoScroll(false));
-      setMessages((prevState) => [...prevState, messageData]);
-    }
+    
+    setMessages((prevState) => [...prevState, messageData]);
   };
 
   // const pubnubListeners = {
@@ -63,22 +64,51 @@ export const ContextProvider = ({ children }) => {
     //   channels: [`${userid}-demo`],
     // });
 
-    const addToChannelGroup = async () => {
+    const fetchUserChannels = async () => {
       const result = await pubnub.channelGroups.listChannels({
         channelGroup: userid,
       });
-      // console.log(result);
       setChannels(result.channels);
     };
 
-    addToChannelGroup();
+    fetchUserChannels();
   }, []);
+
+  const fetchMessages = async (channel, msgCount, startTToken='') => {
+    setLoadingChats(true);
+
+    let messagesRes;
+    if (startTToken) {
+      messagesRes = await pubnub.fetchMessages({
+        channels: [channel],
+        count: msgCount,
+        start: startTToken,
+      });
+    } else {
+      messagesRes = await pubnub.fetchMessages({
+        channels: [channel],
+        count: msgCount,
+      });
+    }
+
+    messagesRes = messagesRes.channels[channel]
+    if (messagesRes) {
+      console.log('messagesRes', messagesRes, messagesRes.length)
+      const parsedMessages = messagesRes.map((msg) => ({
+        senderId: msg.uuid,
+        text: msg.message,
+        time: parseInt(msg.timetoken, 10) / 10000000,
+        id: msg.id,
+      }))
+      setStartTimeToken(messagesRes[0].timetoken)
+      setHasMoreMsgs(messagesRes.length === msgCount);
+      setLoadingChats(false);
+      return parsedMessages;
+    }
+  }
 
   useEffect(() => {
     if (!currentChannel) return;
-    console.log("inn");
-
-    // if (liste)
 
     const pubnubListeners = {
       message: messageEventHandler,
@@ -90,28 +120,14 @@ export const ContextProvider = ({ children }) => {
     pubnub.addListener(pubnubListeners);
 
     setMessages([]);
-    setLoadingChats(true);
 
     pubnub.subscribe({
       channels: [currentChannel],
     });
 
     const loadChannelDetails = async () => {
-      const messagesRes = await pubnub.fetchMessages({
-        channels: [currentChannel],
-      });
-
-      if (messagesRes.channels[currentChannel]) {
-        const msgs = messagesRes.channels[currentChannel].map((msg) => ({
-          senderId: msg.uuid,
-          text: msg.message,
-          time: parseInt(msg.timetoken, 10) / 10000000,
-          id: msg.id,
-        }))
-        setMessages(msgs)
-      }
-
-      setLoadingChats(false);
+      const messagesRes = await fetchMessages(currentChannel, messageCount);
+      setMessages(messagesRes);
     };
 
     loadChannelDetails();
@@ -119,10 +135,14 @@ export const ContextProvider = ({ children }) => {
     return () => pubnub.unsubscribeAll();
   }, [currentChannel]);
 
+  const loadMoreMsgs = async () => {
+    const messagesRes = await fetchMessages(currentChannel, messageCount, startTimeToken);
+    setMessages(prevState => [...messagesRes, ...prevState])
+  }
+
   const createChannel = async (name) => {
     const userGroup = userid;
     const channel = `${name.replace(/\s/g, "")}-${uuidv4()}`;
-    console.log(channel);
 
     await pubnub.channelGroups.addChannels({
       channels: [channel],
@@ -154,6 +174,8 @@ export const ContextProvider = ({ children }) => {
     loadingChats,
     channels,
     sendMessage,
+    loadMoreMsgs,
+    hasMoreMsgs,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

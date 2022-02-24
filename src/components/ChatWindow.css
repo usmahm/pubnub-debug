@@ -29,6 +29,11 @@
   text-align: left;
 }
 
+.msgs-container {
+  height: calc(100vh - 145px);
+  overflow: scroll;
+}
+
 .message {
   border: 2px solid blue;
   border-radius: 10px;

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import InfiniteScroll from 'react-infinite-scroller';
 import { useChatContext } from './context/chatContextProvider';
 import './ChatWindow.css';
 // import { useEffect } from 'react/cjs/react.development';
@@ -6,8 +7,10 @@ import './ChatWindow.css';
 const ChatWindow = () => {
   const [msgQuery, setMsgQuery] = useState('');
   const [newChannel, setNewChannel] = useState('');
+  const [scrolledFirstTime, setScrolledFirstTime] = useState(false);
+  const msgContainerRef = useRef(null);
 
-  const { messages, currentChannel, channels, createChannel, sendMessage, goToChannel, loadingChats } = useChatContext();
+  const { messages, currentChannel, channels, createChannel, sendMessage, goToChannel, loadingChats, loadMoreMsgs, hasMoreMsgs } = useChatContext();
 
   const createNewChannel = () => {
     if (newChannel) {
@@ -21,9 +24,26 @@ const ChatWindow = () => {
     setMsgQuery('');
   }
 
-  // useEffect(() => {
-  //   console.log(messages)
-  // }, [messages])
+  const onTextChange = (e) => {
+    if (e.code === 'Enter') {
+      sendMessageHandler();
+      return;
+    }
+    setMsgQuery(e.target.value)
+  }
+
+  useEffect(() => {
+    console.log(messages)
+
+    if (!scrolledFirstTime && messages.length) {
+      msgContainerRef.current.scrollTop = msgContainerRef.current.scrollHeight - msgContainerRef.current.clientHeight;
+      setScrolledFirstTime(true)
+    }
+  }, [messages, scrolledFirstTime])
+
+  useEffect(() => {
+    console.log(hasMoreMsgs, loadingChats, hasMoreMsgs && !loadingChats);
+  }, [hasMoreMsgs, loadingChats])
 
   return (
     <div className='container'>
@@ -37,18 +57,30 @@ const ChatWindow = () => {
       </div>
       <div className='msgs'>
         <h1>Channel: {currentChannel}</h1>
-        <div className='msgs-container'>
-          {!messages.length && !loadingChats && <p>No messages</p>}
+        <div className='msgs-container' ref={msgContainerRef}>
+          {!messages?.length && !loadingChats && <p>No messages</p>}
           {loadingChats && <p>Loading</p>}
-          {messages.map((msg) => (
-             <div className='message' key={msg.id || msg.time}>
-              <p>{msg.text}</p>
-              <p>{msg.time}</p>
-            </div>
-          ))}
+          {messages.length ? (
+            <InfiniteScroll
+              pageStart={0}
+              initialLoad={false}
+              loadMore={loadMoreMsgs}
+              hasMore={scrolledFirstTime && hasMoreMsgs && !loadingChats}
+              isReverse
+              threshold={100}
+              useWindow={false}
+            >
+              {messages.map((msg) => (
+                <div className='message' key={msg.id || msg.time}>
+                  <p>{msg.text}</p>
+                  <p>{msg.time}</p>
+                </div>
+              ))}
+            </InfiniteScroll>
+          ) : null}
         </div>
         <div className='new-message'>
-          <textarea value={msgQuery} onChange={(e) => setMsgQuery(e.target.value)} />
+          <textarea value={msgQuery} onKeyDown={onTextChange} onChange={(e) => setMsgQuery(e.target.value)} />
           <button onClick={sendMessageHandler}>Send Message</button>
         </div>
       </div>
