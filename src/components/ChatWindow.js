@@ -35,7 +35,7 @@ const ChatWindow = () => {
   useEffect(() => {
     console.log(messages)
 
-    if (!scrolledFirstTime && messages.length) {
+    if (!scrolledFirstTime && messages?.length) {
       msgContainerRef.current.scrollTop = msgContainerRef.current.scrollHeight - msgContainerRef.current.clientHeight;
       setScrolledFirstTime(true)
     }
@@ -60,7 +60,7 @@ const ChatWindow = () => {
         <div className='msgs-container' ref={msgContainerRef}>
           {!messages?.length && !loadingChats && <p>No messages</p>}
           {loadingChats && <p>Loading</p>}
-          {messages.length ? (
+          {messages?.length ? (
             <InfiniteScroll
               pageStart={0}
               initialLoad={false}
